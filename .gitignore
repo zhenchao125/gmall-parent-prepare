@@ -1,2 +1,4 @@
 # Project exclude paths
 /gmall-realtime/target/
+.idea
+*.iml
