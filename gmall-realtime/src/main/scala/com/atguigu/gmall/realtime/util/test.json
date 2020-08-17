@@ -1,0 +1,53 @@
+{
+  "index_patterns": [
+    "gmall_dau_info*"
+  ],
+  "settings": {
+    "number_of_shards": 3
+  },
+  "aliases": {
+    "{index}-query": {
+    },
+    "gmall_dau_info-query": {
+    }
+  },
+  "mappings": {
+    "_doc": {
+      "properties": {
+        "mid": {
+          "type": "keyword"
+        },
+        "uid": {
+          "type": "keyword"
+        },
+        "ar": {
+          "type": "keyword"
+        },
+        "ba": {
+          "type": "keyword"
+        },
+        "ch": {
+          "type": "keyword"
+        },
+        "md": {
+          "type": "keyword"
+        },
+        "os": {
+          "type": "keyword"
+        },
+        "vc": {
+          "type": "keyword"
+        },
+        "ts": {
+          "type": "date"
+        },
+        "logDate": {
+          "type": "keyword"
+        },
+        "logHour": {
+          "type": "keyword"
+        }
+      }
+    }
+  }
+}
