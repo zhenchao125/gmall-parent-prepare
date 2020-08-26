@@ -1,5 +1,6 @@
 package com.atguigu.gmall.realtime.util
 
+import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.apache.spark.streaming.StreamingContext
@@ -50,6 +51,19 @@ object MyKafkaUtil {
                 PreferConsistent,
                 Subscribe[String, String](Set(topic), kafkaParams, fromOffsets)
             )
+    }
+    
+    
+    val producerParams: Map[String, Object] = Map(
+        "bootstrap.servers" -> ConfigUtil.getProperty("kafka.servers"),
+        "key.serializer" -> "org.apache.kafka.common.serialization.StringSerializer",
+        "value.serializer" -> "org.apache.kafka.common.serialization.StringSerializer",
+        "enable.idompotence" -> (true: java.lang.Boolean)
+    )
+    
+    def getKafkaProducer() = {
+        import scala.collection.JavaConverters._
+        new KafkaProducer[String, String](producerParams.asJava)
     }
     
 }
