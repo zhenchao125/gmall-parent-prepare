@@ -43,6 +43,16 @@
         </dependency>
         <!--es 相关依赖 结束-->
 
+        <!--phoenix 依赖开始-->
+        <!-- https://mvnrepository.com/artifact/org.apache.phoenix/phoenix-spark -->
+        <dependency>
+            <groupId>org.apache.phoenix</groupId>
+            <artifactId>phoenix-spark</artifactId>
+            <version>5.0.0-HBase-2.0</version>
+        </dependency>
+
+        <!--phoenix 依赖结束-->
+
 
     </dependencies>
 

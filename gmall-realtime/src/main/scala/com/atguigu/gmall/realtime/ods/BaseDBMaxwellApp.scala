@@ -31,7 +31,6 @@ object BaseDBMaxwellApp extends BaseApp {
                 implicit val f = org.json4s.DefaultFormats
                 val tableName = JsonMethods.render(j \ "table").extract[String]
                 (tableName, Serialization.write(data))
-                
             })
             .foreachRDD(rdd => {
                 rdd.foreachPartition(it => {
@@ -39,7 +38,6 @@ object BaseDBMaxwellApp extends BaseApp {
                     it.foreach {
                         case (tableName, content) =>
                             val topic = s"ods_${tableName}"
-                            println(topic)
                             producer.send(new ProducerRecord[String, String](topic, content))
                     }
                     producer.close()
