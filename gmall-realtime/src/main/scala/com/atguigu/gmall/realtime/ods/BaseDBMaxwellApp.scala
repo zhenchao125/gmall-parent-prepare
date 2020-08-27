@@ -14,7 +14,7 @@ import scala.collection.mutable.ListBuffer
 
 /**
  * Author lzc
- * Date 2020/8/26 7:57 下午
+ * Date 2020/8/26 11:57 下午
  */
 object BaseDBMaxwellApp extends BaseApp {
     override var appName: String = "BaseDBMaxwellApp"
