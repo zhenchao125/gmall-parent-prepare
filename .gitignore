@@ -2,3 +2,4 @@
 /gmall-realtime/target/
 .idea
 *.iml
+.DS_stor
