@@ -40,7 +40,7 @@ object OffsetManager {
      * @param offsetRanges
      */
     def saveOffsets(offsetRanges: ListBuffer[OffsetRange], groupId: String, topic: String): Unit = {
-        if(offsetRanges.isEmpty) return
+        if (offsetRanges.isEmpty) return
         import scala.collection.JavaConverters._
         // 获取分区和该分区的偏移量
         val fieldToValue = offsetRanges
@@ -54,4 +54,41 @@ object OffsetManager {
         client.hmset(s"offset:${groupId}:${topic}", fieldToValue)
         client.close()
     }
+    
+    //------------
+    
+    def readOffsets(groupId: String, topics: Set[String]): Map[TopicPartition, Long] = {
+        import scala.collection.JavaConverters._
+        val client: Jedis = RedisUtil.getClient
+        val partitionToOffsetMap = topics.map(topic => {
+            client
+                .hgetAll(s"offset:${groupId}:${topic}")
+                .asScala
+                .map {
+                    case (partition, offset) =>
+                        new TopicPartition(topic, partition.toInt) -> offset.toLong
+                }
+                .toMap
+        }).reduce((map1, map2) => {
+            map1 ++ map2
+        })
+        client.close()
+        partitionToOffsetMap
+    }
+    
+    
+    def saveOffsets(offsetRanges: ListBuffer[OffsetRange], groupId: String, topics: Set[String]): Unit = {
+        if (offsetRanges.isEmpty) return
+        val client: Jedis = RedisUtil.getClient
+        offsetRanges.foreach(offsetRange => {
+            println(
+                s"""
+                   |===========
+                   |topic: partition ->  offset: ${offsetRange.topic}: ${offsetRange.partition} -> ${offsetRange.untilOffset}
+                   | ==========""".stripMargin)
+            client.hset(s"offset:${groupId}:${offsetRange.topic}", offsetRange.partition.toString, offsetRange.untilOffset.toString)
+        })
+        client.close()
+    }
+    
 }

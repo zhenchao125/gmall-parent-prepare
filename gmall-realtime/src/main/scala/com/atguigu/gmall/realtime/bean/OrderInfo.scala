@@ -21,7 +21,7 @@ case class OrderInfo(id: Long,
 
                      var province_name: String = null,
                      var province_area_code: String = null,
-                     var province_iso_code:String, //国际地区编码
+                     var province_iso_code:String = null, //国际地区编码
 
                      var user_age_group: String = null,
                      var user_gender: String = null) {

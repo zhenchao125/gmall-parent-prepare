@@ -51,8 +51,22 @@ object MyKafkaUtil {
                 PreferConsistent,
                 Subscribe[String, String](Set(topic), kafkaParams, fromOffsets)
             )
+        
     }
     
+    
+    def getKafkaStream(ssc: StreamingContext, groupId: String, topics: Set[String], fromOffsets: Map[TopicPartition, Long]) = {
+        // 把 offset 自动提交设置为 false, 我们需要手动提交offset
+        kafkaParams("enable.auto.commit") = (false: java.lang.Boolean)
+        kafkaParams("group.id") = groupId
+        KafkaUtils
+            .createDirectStream(
+                ssc,
+                PreferConsistent,
+                Subscribe[String, String](topics, kafkaParams, fromOffsets)
+            )
+        
+    }
     
     val producerParams: Map[String, Object] = Map(
         "bootstrap.servers" -> ConfigUtil.getProperty("kafka.servers"),

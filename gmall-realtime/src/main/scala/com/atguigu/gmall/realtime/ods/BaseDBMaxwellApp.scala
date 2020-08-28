@@ -33,6 +33,7 @@ object BaseDBMaxwellApp extends BaseApp {
                 val operate = JsonMethods.render(j \ "type").extract[String] // insert update ...
                 (tableName, operate, Serialization.write(data))
             })
+            .filter(_._3.length > 2)
             .foreachRDD(rdd => {
                 rdd.foreachPartition(it => {
                     val producer: KafkaProducer[String, String] = MyKafkaUtil.getKafkaProducer()

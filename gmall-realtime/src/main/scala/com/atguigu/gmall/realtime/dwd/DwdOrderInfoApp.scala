@@ -1,16 +1,15 @@
 package com.atguigu.gmall.realtime.dwd
 
-import java.time.LocalDate
-
 import com.atguigu.gmall.realtime.BaseApp
 import com.atguigu.gmall.realtime.bean.{OrderInfo, ProvinceInfo, UserInfo, UserStatus}
-import com.atguigu.gmall.realtime.util.{EsUtil, OffsetManager, PhoenixUtil, SparkSqlUtil}
+import com.atguigu.gmall.realtime.util._
 import org.apache.kafka.clients.consumer.ConsumerRecord
+import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.kafka010.OffsetRange
-import org.json4s.jackson.JsonMethods
+import org.json4s.jackson.{JsonMethods, Serialization}
 
 import scala.collection.mutable.ListBuffer
 
@@ -137,8 +136,17 @@ object DwdOrderInfoApp extends BaseApp {
                 .map(info => UserStatus(info.user_id.toString, isConsumed = true))
                 .saveToPhoenix("USER_STATUS", Seq("USER_ID", "IS_CONSUMED"), zkUrl = Option("hadoop102,hadoop103,hadoop104:2181"))
             // 首单写入写入到 es
+            //            rdd.foreachPartition(orderInfoIt => {
+            //                EsUtil.insertBulk(s"gmall_order_info_${LocalDate.now()}", orderInfoIt.map(info => (info.id.toString, info)))
+            //            })
+            
+            // 写数据到 kafka 的 dwd 层
             rdd.foreachPartition(orderInfoIt => {
-                EsUtil.insertBulk(s"gmall_order_info_${LocalDate.now()}", orderInfoIt.map(info => (info.id.toString, info)))
+                val producer: KafkaProducer[String, String] = MyKafkaUtil.getKafkaProducer()
+                orderInfoIt.foreach(orderInfo => {
+                    producer.send(new ProducerRecord[String, String]("dwd_order_info", Serialization.write(orderInfo)))
+                })
+                producer.close()
             })
             
             OffsetManager.saveOffsets(offsetRanges, groupId, topic)

@@ -1,6 +1,5 @@
 package com.atguigu.gmall.realtime.util
 
-import com.atguigu.gmall.realtime.bean.UserInfo
 import org.apache.spark.sql.{Encoder, SparkSession}
 
 /**
