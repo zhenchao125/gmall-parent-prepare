@@ -30,15 +30,20 @@ object BaseDBMaxwellApp extends BaseApp {
                 val data: JValue = j \ "data"
                 implicit val f = org.json4s.DefaultFormats
                 val tableName = JsonMethods.render(j \ "table").extract[String]
-                (tableName, Serialization.write(data))
+                val operate = JsonMethods.render(j \ "type").extract[String] // insert update ...
+                (tableName, operate, Serialization.write(data))
             })
             .foreachRDD(rdd => {
                 rdd.foreachPartition(it => {
                     val producer: KafkaProducer[String, String] = MyKafkaUtil.getKafkaProducer()
                     it.foreach {
-                        case (tableName, content) =>
+                        case (tableName, operate, content) =>
                             val topic = s"ods_${tableName}"
-                            producer.send(new ProducerRecord[String, String](topic, content))
+                            if (tableName != "order_info") {
+                                producer.send(new ProducerRecord[String, String](topic, content))
+                            } else if (operate == "insert") { // 针对 order_info 表, 只保留 insert 数据, update 和 delete 数据不需要
+                                producer.send(new ProducerRecord[String, String](topic, content))
+                            }
                     }
                     producer.close()
                 })
