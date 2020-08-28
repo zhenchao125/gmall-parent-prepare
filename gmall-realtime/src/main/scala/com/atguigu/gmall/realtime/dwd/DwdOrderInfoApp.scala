@@ -3,9 +3,10 @@ package com.atguigu.gmall.realtime.dwd
 import java.time.LocalDate
 
 import com.atguigu.gmall.realtime.BaseApp
-import com.atguigu.gmall.realtime.bean.{OrderInfo, UserStatus}
-import com.atguigu.gmall.realtime.util.{EsUtil, OffsetManager, PhoenixUtil}
+import com.atguigu.gmall.realtime.bean.{OrderInfo, ProvinceInfo, UserInfo, UserStatus}
+import com.atguigu.gmall.realtime.util.{EsUtil, OffsetManager, PhoenixUtil, SparkSqlUtil}
 import org.apache.kafka.clients.consumer.ConsumerRecord
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.kafka010.OffsetRange
@@ -28,6 +29,8 @@ object DwdOrderInfoApp extends BaseApp {
     override def run(ssc: StreamingContext,
                      offsetRanges: ListBuffer[OffsetRange],
                      sourceStream: DStream[ConsumerRecord[String, String]]): Unit = {
+        
+        
         // 1. 把 json 格式数据封装到 OrderInfo 中
         val orderInfoStream = sourceStream.map(record => {
             JsonMethods.parse(record.value()).extract[OrderInfo]
@@ -53,7 +56,7 @@ object DwdOrderInfoApp extends BaseApp {
                 }).toIterator
             })
         // 3. 同一批次同一用户多首单问题解决
-        val resultStream = firstOrderInfoStream
+        var resultStream = firstOrderInfoStream
             .map(info => (info.user_id, info))
             .groupByKey()
             .flatMap {
@@ -75,17 +78,61 @@ object DwdOrderInfoApp extends BaseApp {
                     sortedOrderInfoList match {
                         case one :: two :: tail if one.is_first_order => // 至少两单, 且最早的单是首单, 则把把其他单设置为非首单
                             (two :: tail).foreach(_.is_first_order = false)
-                            println("a: " + one :: two :: tail)
-                        case a => println("b: " + a)
+                        case _ =>
                     }
                     sortedOrderInfoList // 返回修改后的
             }
         
+        
+        val spark: SparkSession = SparkSession
+            .builder()
+            .config(ssc.sparkContext.getConf)
+            .getOrCreate()
+        import spark.implicits._
+        
+        resultStream = resultStream.transform(rdd => {
+            rdd.cache()
+            // 1. 获取 所有省份 id 和 userid, 这样从 hbase 查数据的时候就不需要查出所有数据了
+            val provinceIds: String = rdd.map(_.province_id).collect().mkString("'", "','", "'")
+            val userIds: String = rdd.map(_.user_id).collect().mkString("'", "','", "'")
+            // 2. 查询 sql
+            val provinceSql = s"select * from gmall_province_info where id in (${provinceIds})"
+            val userSql = s"select * from gmall_user_info where id in (${userIds})"
+            // 3. 查询
+            val provinceInfoRDD = SparkSqlUtil
+                .getRDD[ProvinceInfo](spark, provinceSql)
+                .map(info => (info.id, info))
+            val userInfoRDD = SparkSqlUtil
+                .getRDD[UserInfo](spark, userSql)
+                .map(info => (info.id, info))
+            
+            // 4. 分别于 join
+            rdd
+                .map(info => (info.province_id.toString, info))
+                .join(provinceInfoRDD)
+                .map {
+                    case (province_id, (orderInfo, provinceInfo)) =>
+                        orderInfo.province_name = provinceInfo.name
+                        orderInfo.province_area_code = provinceInfo.area_code
+                        orderInfo.province_iso_code = provinceInfo.iso_code
+                        orderInfo
+                }
+                .map(info => (info.user_id.toString, info))
+                .join(userInfoRDD)
+                .map {
+                    case (user_id, (orderInfo, userInfo)) =>
+                        orderInfo.user_age_group = userInfo.age_group
+                        orderInfo.user_gender = userInfo.gender_name
+                        orderInfo
+                }
+            
+        })
+        
         // 4. 首单数据写入到 es, 并在 hbase(通过 Phoenix) 中维护用户的状态
         resultStream.foreachRDD(rdd => {
-            import org.apache.phoenix.spark._
             rdd.cache()
             // 用户状态写入到 Phoenix
+            import org.apache.phoenix.spark._
             rdd.filter(_.is_first_order)
                 .map(info => UserStatus(info.user_id.toString, isConsumed = true))
                 .saveToPhoenix("USER_STATUS", Seq("USER_ID", "IS_CONSUMED"), zkUrl = Option("hadoop102,hadoop103,hadoop104:2181"))
