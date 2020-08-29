@@ -20,16 +20,6 @@ object EsUtil {
         .build()
     factory.setHttpClientConfig(conf)
     
-    
-    def main(args: Array[String]): Unit = {
-        insertSingle("user", User("a", 100))
-        
-        /* val it1 = List(("1", User("cc", 1)), ("2", User("dd", 2))).toIterator
-         val it2 = List(User("cc", 1), User("dd", 2)).toIterator
-         insertBulk("user", it1)*/
-        
-    }
-    
     def insertBulk(index: String, source: Iterator[Object]) = {
         val client: JestClient = factory.getObject
         val bulkBuilder = new Bulk.Builder()
@@ -60,8 +50,6 @@ object EsUtil {
         
         client.shutdownClient()
     }
-    
-    
+
 }
 
-case class User(name: String, age: Long)
