@@ -23,6 +23,7 @@ case class OrderDetail(id: Long,
         this.tm_id = skuInfo.tm_id.toLong
         this.category3_id = skuInfo.category3_id.toLong
         this.spu_name = skuInfo.spu_name
+        this.tm_name = skuInfo.tm_name
         this.category3_name = skuInfo.category3_name
         this
     }

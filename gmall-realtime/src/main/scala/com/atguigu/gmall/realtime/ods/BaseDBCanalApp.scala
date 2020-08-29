@@ -21,6 +21,16 @@ object BaseDBCanalApp extends BaseApp {
     override var groupId: String = "bigdata1"
     override var topic: String = "gmall_db"
     
+    val tableNames = List(
+        "order_info",
+        "order_detail",
+        "user_info",
+        "base_province",
+        "base_category3",
+        "sku_info",
+        "spu_info",
+        "base_trademark")
+    
     override def run(ssc: StreamingContext,
                      offsetRanges: ListBuffer[OffsetRange],
                      sourceStream: DStream[ConsumerRecord[String, String]]): Unit = {
@@ -36,6 +46,11 @@ object BaseDBCanalApp extends BaseApp {
                     (tableName, operate, JsonMethods.compact(JsonMethods.render(child)))
                 })
             })
+            .filter {
+                case (tableName, operate, content) =>
+                    // 只发送 ods 需要的表, 删除的动作不要, 内容长度不为空"{}"
+                    tableNames.contains(tableName) && operate.toLowerCase() != "delete" && content.length > 2
+            }
             .foreachRDD(rdd => {
                 rdd.foreachPartition(it => {
                     val producer: KafkaProducer[String, String] = MyKafkaUtil.getKafkaProducer()

@@ -34,7 +34,6 @@ abstract class BaseAppV2 {
         val sourceStream: DStream[ConsumerRecord[String, String]] = MyKafkaUtil
             .getKafkaStream(ssc, groupId, topics, fromOffsets)
             .transform(rdd => {
-                rdd.cache()
                 offsetRanges.clear
                 val newOffsetRanges: Array[OffsetRange] = rdd.asInstanceOf[HasOffsetRanges].offsetRanges
                 offsetRanges ++= newOffsetRanges

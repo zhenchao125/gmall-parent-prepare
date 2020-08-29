@@ -79,16 +79,26 @@ object OffsetManager {
     
     def saveOffsets(offsetRanges: ListBuffer[OffsetRange], groupId: String, topics: Set[String]): Unit = {
         if (offsetRanges.isEmpty) return
+        
+        var map = Map[String, Map[Int, Long]]()
+        
         val client: Jedis = RedisUtil.getClient
         offsetRanges.foreach(offsetRange => {
-            println(
-                s"""
-                   |===========
-                   |topic: partition ->  offset: ${offsetRange.topic}: ${offsetRange.partition} -> ${offsetRange.untilOffset}
-                   | ==========""".stripMargin)
+            //=============仅仅为了打印 topic每个分区的 offset
+            var m1: Map[Int, Long] = map.getOrElse(offsetRange.topic, Map[Int, Long]())
+            m1 += offsetRange.partition -> offsetRange.untilOffset
+            map += offsetRange.topic -> m1
+            //=============仅仅为了打印 topic每个分区的 offset
             client.hset(s"offset:${groupId}:${offsetRange.topic}", offsetRange.partition.toString, offsetRange.untilOffset.toString)
         })
         client.close()
+        
+        println(
+            s"""
+               |==============
+               |$map
+               |==============
+               |""".stripMargin)
     }
     
 }

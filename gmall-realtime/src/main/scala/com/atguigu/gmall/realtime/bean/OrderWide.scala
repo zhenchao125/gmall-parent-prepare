@@ -3,16 +3,20 @@ package com.atguigu.gmall.realtime.bean
 /**
  * Author lzc
  * Date 2020/8/29 10:17 上午
+ *
+ * 1. 粒度和 order_detail 形同
  */
 case class OrderWide( // 来源 OrderInfo
                       var order_id: Long = 0L,
                       var province_id: Long = 0L,
                       var order_status: String = null,
                       var user_id: Long = 0L,
-                      var final_total_amount: Double = 0D,
-                      var benefit_reduce_amount: Double = 0D,
-                      var original_total_amount: Double = 0D,
-                      var feight_fee: Double = 0D,
+
+                      var final_total_amount: Double = 0D, // 实际支付总金额 = 原始总金额-优惠+运费
+                      var benefit_reduce_amount: Double = 0D, // 优惠金额
+                      var original_total_amount: Double = 0D, // 原始总金额 = ∑sku_price*sku_num
+
+                      var feight_fee: Double = 0D, // 运费
                       var expire_time: String = null,
                       var create_time: String = null,
                       var operate_time: String = null,
@@ -22,7 +26,7 @@ case class OrderWide( // 来源 OrderInfo
 
                       var province_name: String = null,
                       var province_area_code: String = null,
-                      var province_iso_code: String = null, //国际地区编码
+                      var province_iso_code: String = null,
 
                       var user_age_group: String = null,
                       var user_gender: String = null,
@@ -49,7 +53,7 @@ case class OrderWide( // 来源 OrderInfo
         mergeOrderDetail(orderDetail)
     }
     
-    def mergeOrderInfo(orderInfo: OrderInfo): Unit = {
+    def mergeOrderInfo(orderInfo: OrderInfo) = {
         if (orderInfo != null) {
             this.order_id = orderInfo.id
             this.province_id = orderInfo.province_id
@@ -70,10 +74,11 @@ case class OrderWide( // 来源 OrderInfo
             this.user_age_group = orderInfo.user_age_group
             this.user_gender = orderInfo.user_gender
         }
+        this
     }
     
     
-    def mergeOrderDetail(orderDetail: OrderDetail): Unit = {
+    def mergeOrderDetail(orderDetail: OrderDetail) = {
         if (orderDetail != null) {
             this.order_detail_id = orderDetail.id
             this.sku_id = orderDetail.sku_id
@@ -88,5 +93,12 @@ case class OrderWide( // 来源 OrderInfo
             this.tm_name = orderDetail.tm_name
             this.category3_name = orderDetail.category3_name
         }
+        this
     }
+    
+    override def toString: String = s"原始总金额: ${original_total_amount}, " +
+        s"支付总金额: ${final_total_amount}, " +
+        s"该详情总金额: ${sku_num * sku_price}, " +
+        s"分摊金额: ${final_detail_amount}, " +
+        s"订单 id: ${order_id}"
 }

@@ -21,6 +21,16 @@ object BaseDBMaxwellApp extends BaseApp {
     override var groupId: String = "bigdata2"
     override var topic: String = "maxwell_gmall_db"
     
+    val tableNames = List(
+        "order_info",
+        "order_detail",
+        "user_info",
+        "base_province",
+        "base_category3",
+        "sku_info",
+        "spu_info",
+        "base_trademark")
+    
     override def run(ssc: StreamingContext,
                      offsetRanges: ListBuffer[OffsetRange],
                      sourceStream: DStream[ConsumerRecord[String, String]]): Unit = {
@@ -33,7 +43,11 @@ object BaseDBMaxwellApp extends BaseApp {
                 val operate = JsonMethods.render(j \ "type").extract[String] // insert update ...
                 (tableName, operate, Serialization.write(data))
             })
-            .filter(_._3.length > 2)
+            .filter{
+                case (tableName, operate, content) =>
+                    // 只发送 ods 需要的表, 删除的动作不要, 内容长度不为空"{}"
+                    tableNames.contains(tableName) && operate != "delete" && content.length > 2
+            }
             .foreachRDD(rdd => {
                 rdd.foreachPartition(it => {
                     val producer: KafkaProducer[String, String] = MyKafkaUtil.getKafkaProducer()
@@ -48,7 +62,6 @@ object BaseDBMaxwellApp extends BaseApp {
                     }
                     producer.close()
                 })
-                
                 OffsetManager.saveOffsets(offsetRanges, groupId, topic)
             })
     }

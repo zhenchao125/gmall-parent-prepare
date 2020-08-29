@@ -38,7 +38,6 @@ object DwdOrderDetailApp extends BaseApp {
         // 1. 数据封装
         val orderDetailStream = sourceStream.map(record => {
             implicit val f = org.json4s.DefaultFormats + StringToLong
-            System.out.println(record.value());
             JsonMethods.parse(record.value()).extract[OrderDetail]
         })
         // 2. 关联 sku_info 维度表
@@ -67,6 +66,7 @@ object DwdOrderDetailApp extends BaseApp {
                     // 2.4 把 orderDetail 信息写入到 kafka
                     val producer: KafkaProducer[String, String] = MyKafkaUtil.getKafkaProducer()
                     orderDetailIt.foreach(orderDetail => {
+                        println(orderDetail)
                         implicit val f = org.json4s.DefaultFormats
                         producer.send(new ProducerRecord[String, String]("dwd_order_detail", Serialization.write(orderDetail)))
                     })
