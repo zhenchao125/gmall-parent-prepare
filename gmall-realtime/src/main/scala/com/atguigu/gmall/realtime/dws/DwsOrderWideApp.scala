@@ -1,11 +1,13 @@
 package com.atguigu.gmall.realtime.dws
 
 import java.lang
+import java.util.Properties
 
 import com.atguigu.gmall.realtime.BaseAppV3
 import com.atguigu.gmall.realtime.bean.{OrderDetail, OrderInfo, OrderWide}
-import com.atguigu.gmall.realtime.util.RedisUtil
+import com.atguigu.gmall.realtime.util.{OffsetManager, RedisUtil}
 import org.apache.kafka.clients.consumer.ConsumerRecord
+import org.apache.spark.sql.{Dataset, SparkSession}
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.kafka010.OffsetRange
 import org.apache.spark.streaming.{Seconds, StreamingContext}
@@ -20,7 +22,7 @@ import scala.collection.mutable.ListBuffer
  */
 object DwsOrderWideApp extends BaseAppV3 {
     override var appName: String = "DwsOrderWideApp"
-    override var groupId: String = "DwsOrderWideApp"
+    override var groupId: String = "DwsOrderWideApp1"
     override var totalCores: Int = 2
     override var topics: Set[String] = Set("dwd_order_info", "dwd_order_detail")
     
@@ -98,15 +100,31 @@ object DwsOrderWideApp extends BaseAppV3 {
             r
         })
         
+        
+        val spark: SparkSession = SparkSession
+            .builder()
+            .config(ssc.sparkContext.getConf)
+            .getOrCreate()
+        import spark.implicits._
+        
         // 5. 写入到 ClickHouse
         result.foreachRDD(rdd => {
             rdd.cache()
             println("时间戳.....开始")
-            rdd.collect().foreach(println)
+            val df: Dataset[OrderWide] = rdd.toDS()
+            df.show(1000)
+            df
+                .write
+                .option("batchsize", "100")
+                .option("isolationLevel", "NONE") // 设置没有事务
+                .option("numPartitions", "2") // 设置并发
+                .option("driver", "ru.yandex.clickhouse.ClickHouseDriver")
+                .mode("append")
+                .jdbc("jdbc:clickhouse://hadoop102:8123/gmall", "order_wide", new Properties())
             println("时间戳.....结束")
-            
-            //            OffsetManager.saveOffsets(offsetRanges, groupId, topics)
+            OffsetManager.saveOffsets(offsetRanges, groupId, topics)
         })
+        
     }
 }
 

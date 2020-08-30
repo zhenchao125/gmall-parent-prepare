@@ -73,6 +73,8 @@ case class OrderWide( // 来源 OrderInfo
             this.province_iso_code = orderInfo.province_iso_code
             this.user_age_group = orderInfo.user_age_group
             this.user_gender = orderInfo.user_gender
+            
+            if(this.operate_time== null) operate_time = "1970-01-01 00:00:00"
         }
         this
     }
