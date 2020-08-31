@@ -45,6 +45,7 @@ object MyKafkaUtil {
         // 把 offset 自动提交设置为 false, 我们需要手动提交offset
         kafkaParams("enable.auto.commit") = (false: java.lang.Boolean)
         kafkaParams("group.id") = groupId
+        kafkaParams("auto.offset.reset") = "earliest"
         KafkaUtils
             .createDirectStream(
                 ssc,

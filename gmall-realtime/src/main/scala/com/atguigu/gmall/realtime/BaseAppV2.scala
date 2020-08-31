@@ -13,6 +13,8 @@ import scala.collection.mutable.ListBuffer
 /**
  * Author lzc
  * Date 2020/8/26 7:58 下午
+ *
+ * 消费多个kafka topic, 所有的数据放在一个流中
  */
 abstract class BaseAppV2 {
     var appName: String

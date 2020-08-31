@@ -76,11 +76,16 @@
         </dependency>
         <!--ClickHouse 依赖结束-->
 
-        <!--mysql驱动 开始-->
+        <!--mysql 驱动 开始-->
+        <dependency>
+            <groupId>org.scalikejdbc</groupId>
+            <artifactId>scalikejdbc-config_2.12</artifactId>
+            <version>2.5.0</version>
+        </dependency>
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
-            <version>5.1.49</version>
+            <version>5.1.47</version>
         </dependency>
         <!--mysql驱动 结束-->
 

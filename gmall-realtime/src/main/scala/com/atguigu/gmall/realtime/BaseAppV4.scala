@@ -13,6 +13,8 @@ import scala.collection.mutable.ListBuffer
 /**
  * Author lzc
  * Date 2020/8/26 7:58 下午
+ *
+ * 消费单个 kafka topic 的数据, 数据偏移保存在 mysql 中
  */
 abstract class BaseAppV4 {
     var appName: String
