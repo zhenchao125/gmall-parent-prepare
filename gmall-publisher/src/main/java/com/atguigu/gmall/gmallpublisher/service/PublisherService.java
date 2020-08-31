@@ -1,6 +1,6 @@
 package com.atguigu.gmall.gmallpublisher.service;
 
-import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.Map;
 
 /**
@@ -10,15 +10,22 @@ import java.util.Map;
 public interface PublisherService {
     /**
      * 获取指定指定日期的日活
-     * @param date  需要计算日活的日期
-     * @return  当然日活总数
+     *
+     * @param date 需要计算日活的日期
+     * @return 当然日活总数
      */
     Long getDau(String date);
 
     /**
      * 获取指定日期的小时活跃数
-     * @param date  需要计算小时活跃数的日期
-     * @return  小时候的活跃数  key: 小时   value: 活跃数
+     *
+     * @param date 需要计算小时活跃数的日期
+     * @return 小时候的活跃数  key: 小时   value: 活跃数
      */
     Map<String, Long> getHourDau(String date);
+
+    public BigDecimal getOrderAmountTotal(String date);
+
+    // Map[10->1020.88, ....]
+    public Map<String, BigDecimal> getOrderAmountHour(String date);
 }

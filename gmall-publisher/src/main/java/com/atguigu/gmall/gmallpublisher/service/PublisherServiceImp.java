@@ -3,6 +3,7 @@ package com.atguigu.gmall.gmallpublisher.service;/**
  * Date 2020/8/19 9:10 下午
  */
 
+import com.atguigu.gmall.gmallpublisher.mapper.OrderMapper;
 import io.searchbox.client.JestClient;
 import io.searchbox.core.Search;
 import io.searchbox.core.SearchResult;
@@ -11,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -74,4 +76,26 @@ public class PublisherServiceImp implements PublisherService {
         }
         return result;
     }
+
+    @Autowired
+    OrderMapper mapper;
+
+    @Override
+    public BigDecimal getOrderAmountTotal(String date) {
+        return mapper.getOrderAmountTotal(date);
+    }
+
+    @Override
+    public Map<String, BigDecimal> getOrderAmountHour(String date) {
+        Map<String, BigDecimal> result = new HashMap<>();
+        List<Map<String, Object>> mapList = mapper.getOrderAmountHour(date);
+        for (Map<String, Object> map : mapList) {
+            String hour = (String) map.get("hour");
+            BigDecimal total = (BigDecimal) map.get("total");
+            result.put(hour, total);
+        }
+        return result;
+    }
+
+
 }

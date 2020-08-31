@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -55,6 +56,14 @@ public class PublisherController {
         map2.put("name", "新增设备");
         map2.put("value", "233");
         result.add(map2);
+
+        Map<String, String> map3 = new HashMap<>();
+        map3.put("id", "order_amount");
+        map3.put("name", "新增交易额");
+        map3.put("value", service.getOrderAmountTotal(date).toString());
+        result.add(map3);
+
+
         return JSON.toJSONString(result);
     }
 
@@ -88,8 +97,15 @@ public class PublisherController {
 
             return JSON.toJSONString(result);
 
-        } else {
+        } else if("order_amount".equals(id)){
+            Map<String, BigDecimal> today = service.getOrderAmountHour(date);
+            Map<String, BigDecimal> yesterday = service.getOrderAmountHour(getYesterday(date));
 
+            HashMap<String, Map<String, BigDecimal>> result = new HashMap<>();
+            result.put("today", today);
+            result.put("yesterday", yesterday);
+
+            return JSON.toJSONString(result);
         }
         return "ok";
     }

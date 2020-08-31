@@ -76,6 +76,14 @@
         </dependency>
         <!--ClickHouse 依赖结束-->
 
+        <!--mysql驱动 开始-->
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>5.1.49</version>
+        </dependency>
+        <!--mysql驱动 结束-->
+
 
     </dependencies>
 

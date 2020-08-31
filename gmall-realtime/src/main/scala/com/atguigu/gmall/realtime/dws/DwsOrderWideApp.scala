@@ -1,17 +1,17 @@
 package com.atguigu.gmall.realtime.dws
 
 import java.lang
-import java.util.Properties
 
 import com.atguigu.gmall.realtime.BaseAppV3
 import com.atguigu.gmall.realtime.bean.{OrderDetail, OrderInfo, OrderWide}
-import com.atguigu.gmall.realtime.util.{OffsetManager, RedisUtil}
+import com.atguigu.gmall.realtime.util.{MyKafkaUtil, OffsetManager, RedisUtil}
 import org.apache.kafka.clients.consumer.ConsumerRecord
-import org.apache.spark.sql.{Dataset, SparkSession}
+import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.kafka010.OffsetRange
 import org.apache.spark.streaming.{Seconds, StreamingContext}
-import org.json4s.jackson.JsonMethods
+import org.json4s.jackson.{JsonMethods, Serialization}
 import redis.clients.jedis.Jedis
 
 import scala.collection.mutable.ListBuffer
@@ -105,11 +105,12 @@ object DwsOrderWideApp extends BaseAppV3 {
             .builder()
             .config(ssc.sparkContext.getConf)
             .getOrCreate()
-        import spark.implicits._
         
         // 5. 写入到 ClickHouse
         result.foreachRDD(rdd => {
-            rdd.cache()
+            
+            // 写入到 clickhouse
+            /*rdd.cache()
             println("时间戳.....开始")
             val df: Dataset[OrderWide] = rdd.toDS()
             df.show(1000)
@@ -121,6 +122,18 @@ object DwsOrderWideApp extends BaseAppV3 {
                 .option("driver", "ru.yandex.clickhouse.ClickHouseDriver")
                 .mode("append")
                 .jdbc("jdbc:clickhouse://hadoop102:8123/gmall", "order_wide", new Properties())
+            println("时间戳.....结束")*/
+            
+            // 写入到 kafka 的 dws 层
+            println("时间戳.....开始")
+            rdd.foreachPartition(orderWideIt => {
+                val producer: KafkaProducer[String, String] = MyKafkaUtil.getKafkaProducer()
+                orderWideIt.foreach(orderWide => {
+                    implicit val f = org.json4s.DefaultFormats
+                    producer.send(new ProducerRecord[String, String]("dwd_order_wide", Serialization.write(orderWide)))
+                })
+                producer.close()
+            })
             println("时间戳.....结束")
             OffsetManager.saveOffsets(offsetRanges, groupId, topics)
         })
